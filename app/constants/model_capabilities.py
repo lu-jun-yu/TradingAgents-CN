@@ -347,6 +347,16 @@ DEFAULT_MODEL_CAPABILITIES: Dict[str, Dict[str, Any]] = {
         "performance_metrics": {"speed": 2, "cost": 2, "quality": 5},
         "description": "Moonshot V1 128K，超长上下文旗舰"
     },
+
+    # ==================== vLLM 本地部署 ====================
+    "qwen3-4b": {
+        "capability_level": 2,
+        "suitable_roles": [ModelRole.BOTH],
+        "features": [ModelFeature.TOOL_CALLING, ModelFeature.FAST_RESPONSE, ModelFeature.COST_EFFECTIVE],
+        "recommended_depths": ["快速", "基础", "标准"],
+        "performance_metrics": {"speed": 5, "cost": 5, "quality": 3},
+        "description": "Qwen3-4B vLLM本地部署，零成本快速响应"
+    },
 }
 
 

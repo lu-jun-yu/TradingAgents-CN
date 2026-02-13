@@ -104,6 +104,16 @@ async def init_providers():
             "default_base_url": "https://api.302.ai/v1",
             "is_active": True,
             "supported_features": ["chat", "completion", "embedding", "image", "vision", "function_calling", "streaming"]
+        },
+        {
+            "name": "vllm",
+            "display_name": "vLLM 本地部署",
+            "description": "vLLM是高性能的本地LLM推理引擎，支持OpenAI兼容API，适合部署开源模型",
+            "website": "https://docs.vllm.ai",
+            "api_doc_url": "https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html",
+            "default_base_url": "http://localhost:8000/v1",
+            "is_active": True,
+            "supported_features": ["chat", "completion", "function_calling", "streaming"]
         }
     ]
     

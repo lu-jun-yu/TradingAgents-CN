@@ -121,7 +121,7 @@ def create_llm_by_provider(provider: str, model: str, backend_url: str, temperat
             timeout=timeout
         )
 
-    elif provider.lower() in ["openai", "siliconflow", "openrouter", "ollama"]:
+    elif provider.lower() in ["openai", "siliconflow", "openrouter", "ollama", "vllm"]:
         # 优先使用传入的 API Key，否则从环境变量读取
         if not api_key:
             if provider.lower() == "siliconflow":
@@ -130,6 +130,9 @@ def create_llm_by_provider(provider: str, model: str, backend_url: str, temperat
                 api_key = os.getenv('OPENROUTER_API_KEY') or os.getenv('OPENAI_API_KEY')
             elif provider.lower() == "openai":
                 api_key = os.getenv('OPENAI_API_KEY')
+            elif provider.lower() == "vllm":
+                # vLLM 通常不需要 API Key，使用占位值
+                api_key = os.getenv('VLLM_API_KEY', 'EMPTY')
 
         return ChatOpenAI(
             model=model,
@@ -356,6 +359,32 @@ class TradingAgentsGraph:
                 max_tokens=quick_max_tokens,
                 timeout=quick_timeout
             )
+        elif self.config["llm_provider"].lower() == "vllm":
+            # vLLM 本地部署 - OpenAI 兼容 API
+            # vLLM 通常不需要 API Key，使用数据库配置或占位值
+            vllm_api_key = self.config.get("quick_api_key") or self.config.get("deep_api_key") or os.getenv('VLLM_API_KEY', 'EMPTY')
+
+            logger.info(f"🖥️ [vLLM] 使用本地vLLM部署")
+            logger.info(f"🔧 [vLLM-快速模型] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
+            logger.info(f"🔧 [vLLM-深度模型] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
+
+            self.deep_thinking_llm = ChatOpenAI(
+                model=self.config["deep_think_llm"],
+                base_url=self.config["backend_url"],
+                api_key=vllm_api_key,
+                temperature=deep_temperature,
+                max_tokens=deep_max_tokens,
+                timeout=deep_timeout
+            )
+            self.quick_thinking_llm = ChatOpenAI(
+                model=self.config["quick_think_llm"],
+                base_url=self.config["backend_url"],
+                api_key=vllm_api_key,
+                temperature=quick_temperature,
+                max_tokens=quick_max_tokens,
+                timeout=quick_timeout
+            )
+            logger.info(f"✅ [vLLM] 已配置本地部署模型")
         elif self.config["llm_provider"].lower() == "anthropic":
             logger.info(f"🔧 [Anthropic-快速模型] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
             logger.info(f"🔧 [Anthropic-深度模型] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")

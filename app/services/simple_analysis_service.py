@@ -291,6 +291,7 @@ def _get_env_api_key_for_provider(provider: str) -> str:
         "siliconflow": "SILICONFLOW_API_KEY",
         "qianfan": "QIANFAN_API_KEY",
         "302ai": "AI302_API_KEY",
+        "vllm": "VLLM_API_KEY",
     }
 
     env_key_name = env_key_map.get(provider.lower())
@@ -321,6 +322,7 @@ def _get_default_backend_url(provider: str) -> str:
         "openrouter": "https://openrouter.ai/api/v1",
         "qianfan": "https://qianfan.baidubce.com/v2",
         "302ai": "https://api.302.ai/v1",
+        "vllm": "http://localhost:8000/v1",
     }
 
     url = default_urls.get(provider, "https://dashscope.aliyuncs.com/compatible-mode/v1")
@@ -361,7 +363,10 @@ def _get_default_provider_by_model(model_name: str) -> str:
         # 智谱AI
         'glm-4': 'zhipu',
         'glm-3-turbo': 'zhipu',
-        'chatglm3-6b': 'zhipu'
+        'chatglm3-6b': 'zhipu',
+
+        # vLLM 本地部署（常见模型名的后备映射）
+        'qwen3-4b': 'vllm',
     }
 
     provider = model_provider_map.get(model_name, 'dashscope')  # 默认使用阿里百炼
@@ -504,9 +509,26 @@ def create_analysis_config(
         quick_provider_info = get_provider_and_url_by_model_sync(quick_model)
         deep_provider_info = get_provider_and_url_by_model_sync(deep_model)
 
-        config["backend_url"] = quick_provider_info["backend_url"]
         config["quick_api_key"] = quick_provider_info.get("api_key")  # 🔥 保存快速模型的 API Key
         config["deep_api_key"] = deep_provider_info.get("api_key")    # 🔥 保存深度模型的 API Key
+
+        # 🔀 检测混合 provider 模式（快速模型和深度模型来自不同厂家）
+        quick_prov = quick_provider_info["provider"]
+        deep_prov = deep_provider_info["provider"]
+
+        if quick_prov != deep_prov:
+            # 混合模式：设置独立的 provider 和 backend_url
+            logger.info(f"🔀 [混合模式] 检测到不同厂家: quick={quick_prov}, deep={deep_prov}")
+            config["quick_provider"] = quick_prov
+            config["deep_provider"] = deep_prov
+            config["quick_backend_url"] = quick_provider_info["backend_url"]
+            config["deep_backend_url"] = deep_provider_info["backend_url"]
+            config["llm_provider"] = quick_prov
+            config["backend_url"] = quick_provider_info["backend_url"]
+        else:
+            # 同一 provider 模式
+            config["llm_provider"] = quick_prov
+            config["backend_url"] = quick_provider_info["backend_url"]
 
         logger.info(f"✅ 使用数据库配置的 backend_url: {quick_provider_info['backend_url']}")
         logger.info(f"   来源: 模型 {quick_model} 的配置或厂家 {quick_provider_info['provider']} 的默认地址")

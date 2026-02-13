@@ -30,6 +30,7 @@ class ModelProvider(str, Enum):
     CUSTOM_OPENAI = "custom_openai"
     QIANFAN = "qianfan"
     LOCAL = "local"
+    VLLM = "vllm"              # vLLM 本地部署
 
     # 🆕 聚合渠道
     AI302 = "302ai"              # 302.AI

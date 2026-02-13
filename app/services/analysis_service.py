@@ -22,7 +22,7 @@ init_logging()
 
 from tradingagents.graph.trading_graph import TradingAgentsGraph
 from tradingagents.default_config import DEFAULT_CONFIG
-from app.services.simple_analysis_service import create_analysis_config, get_provider_by_model_name
+from app.services.simple_analysis_service import create_analysis_config, get_provider_by_model_name, get_provider_by_model_name_sync
 from app.models.analysis import (
     AnalysisParameters, AnalysisResult, AnalysisTask, AnalysisBatch,
     AnalysisStatus, BatchStatus, SingleAnalysisRequest, BatchAnalysisRequest
@@ -168,9 +168,7 @@ class AnalysisService:
             progress_tracker.update_progress("💰 预估分析成本")
 
             # 根据模型名称动态查找供应商（同步版本）
-            llm_provider = "dashscope"  # 默认使用dashscope
-
-            # 参数配置
+            llm_provider = get_provider_by_model_name_sync(quick_model)
             progress_tracker.update_progress("⚙️ 配置分析参数")
 
             # 使用标准配置函数创建完整配置
@@ -293,10 +291,7 @@ class AnalysisService:
                 logger.warning(f"⚠️ 从 MongoDB 读取模型配置失败: {e}，将使用默认参数")
 
             # 根据模型名称动态查找供应商（同步版本）
-            llm_provider = "dashscope"  # 默认使用dashscope
-
-            # 使用标准配置函数创建完整配置
-            from app.services.simple_analysis_service import create_analysis_config
+            llm_provider = get_provider_by_model_name_sync(quick_model)
             config = create_analysis_config(
                 research_depth=task.parameters.research_depth,
                 selected_analysts=task.parameters.selected_analysts or ["market", "fundamentals"],
@@ -352,11 +347,12 @@ class AnalysisService:
             logger.info(f"🔄 开始执行分析任务: {task.task_id} - {task.symbol}")
 
             # 创建进度跟踪器
+            _quick_model_for_provider = getattr(task.parameters, 'quick_analysis_model', None) or "qwen-turbo"
             progress_tracker = RedisProgressTracker(
                 task_id=task.task_id,
                 analysts=task.parameters.selected_analysts or ["market", "fundamentals"],
                 research_depth=task.parameters.research_depth or "标准",
-                llm_provider="dashscope"
+                llm_provider=get_provider_by_model_name_sync(_quick_model_for_provider)
             )
 
             # 缓存进度跟踪器
