@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 class AnalysisService:
     """股票分析服务类"""
-
+    
     def __init__(self):
         # 获取Redis客户端
         redis_client = get_redis_client()
