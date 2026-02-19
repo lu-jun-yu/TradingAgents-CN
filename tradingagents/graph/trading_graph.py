@@ -1405,6 +1405,9 @@ class TradingAgentsGraph:
 
     def reflect_and_remember(self, returns_losses):
         """Reflect on decisions and update memory based on returns."""
+        # 如果记忆系统已关闭（memory_enabled=False），跳过反思
+        if self.bull_memory is None:
+            return
         self.reflector.reflect_bull_researcher(
             self.curr_state, returns_losses, self.bull_memory
         )
